@@ -115,10 +115,13 @@ int probeInit(ProbeHnalde handle, const char* uri)
     }
 
     //duration
-    AVRational bq = {1, PMSECOND};
+    AVRational bq = { 1, PSECOND };
     AVStream *ps = handle->fmtCtx->streams[handle->probetrack];
+    printf("time_base: %d / %d. \n", ps->time_base.num, ps->time_base.den);
+    printf("time_base2: %d / %d. \n", 1, AV_TIME_BASE);
     if(ps->duration > 0) {
-        handle->duration = av_rescale_q(ps->duration, ps->time_base, bq);
+        handle->duration = av_rescale_q(ps->duration, AV_TIME_BASE_Q, bq);
+        printf("convert duration(%ld) to %ld \n",  ps->duration, handle->duration);
     }
     //start time
     if(ps->start_time > 0) {
