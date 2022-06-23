@@ -6,7 +6,7 @@ echo "root=$ROOT"
 
 export ROOT
 export EXTRA_DIR=$ROOT/extra
-export ENGINE_DIR=$ROOT/gstreamer
+export ENGINE_DIR=$ROOT/engine
 export INSTALL_DIR=$ROOT/output/usr/local
 export BUILD_TEMP=$ROOT/.build_temp/
 
