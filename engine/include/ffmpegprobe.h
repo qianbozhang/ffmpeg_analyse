@@ -56,6 +56,19 @@ int probeInit(ProbeHnalde handle, const char* uri);
 ******************************************************/
 int probeDeInit(ProbeHnalde handle);
 
+/******************************************************
+ @@Name: probeShowStreamEntries
+ @@Author:
+ @@Date: 2022-06-23
+ @@Function: show stream entries info
+ @@Input: ProbeHnalde handle
+          char* out_to_path
+ @@Output:
+ @@Return: 0/-1
+ @@Medify History:
+******************************************************/
+int probeShowStreamEntries(ProbeHnalde handle, const char* out_to_path);
+
 #ifdef __cplusplus
 }
 #endif

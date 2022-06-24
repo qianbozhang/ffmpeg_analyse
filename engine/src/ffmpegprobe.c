@@ -9,26 +9,35 @@
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
 
-
-#define PSECOND         1000000000
-#define PMSECOND        1000000
 #define URI_BUFF_MAX    1024
 
+//time
+#if __GNUC__ > 2 || (__GNUC == 2 && __GNUC_MINOR__ >= 8)
+#define G_GNUC_EXTENSION __extension__
+#else
+#define G_GNUC_EXTENSION
+#endif
+
+#define G_GINT64_CONSTANT(val)      (G_GNUC_EXTENSION (val##LL))
+#define G_GUINT64_CONSTANT(val)     (G_GNUC_EXTENSION (val##ULL))
+
+/* microseconds per second */
+#define G_USEC_PER_SEC              1000000
+#define PSECOND                     ((int64_t)(G_USEC_PER_SEC * G_GINT64_CONSTANT(1000)))
+#define PMSECOND                    ((int64_t)(PSECOND / G_GINT64_CONSTANT(1000)))
 typedef uint64_t                    ClockTime;
 #define CLOCK_TIME_NONE             ((ClockTime)-1)
 #define CLOCK_TIME_IS_VALID(time)   (((ClockTime)(time)) != CLOCK_TIME_NONE)
 #define TIME_FORMAT                 "u:%02u:%02u.%09u"
+#define TIME_ARGS(t)                                                                            \
+        CLOCK_TIME_IS_VALID (t) ? (uint) (((ClockTime)(t)) / (PSECOND * 60 * 60)) : 99,         \
+        CLOCK_TIME_IS_VALID (t) ? (uint) ((((ClockTime)(t)) / (PSECOND * 60)) % 60) : 99,       \
+        CLOCK_TIME_IS_VALID (t) ? (uint) ((((ClockTime)(t)) / PSECOND) % 60) : 99,              \
+        CLOCK_TIME_IS_VALID (t) ? (uint) (((ClockTime)(t)) % PSECOND) : 999999999
 
 
-#define TIME_ARGS(t)                                                \
-        CLOCK_TIME_IS_VALID (t) ?                                   \
-        (uint) (((ClockTime)(t)) / (PSECOND * 60 * 60)) : 99,       \
-        CLOCK_TIME_IS_VALID (t) ?                                   \
-        (uint) ((((ClockTime)(t)) / (PSECOND * 60)) % 60) : 99,     \
-        CLOCK_TIME_IS_VALID (t) ?                                   \
-        (uint) ((((ClockTime)(t)) / PSECOND) % 60) : 99,            \
-        CLOCK_TIME_IS_VALID (t) ?                                   \
-        (uint) (((ClockTime)(t)) % PSECOND) : 999999999
+static uint64_t convertTime_ff_to_sys(int64_t time, AVRational base);
+static int64_t convertTime_sys_to_ff(uint64_t time, AVRational base);
 
 typedef struct _ProbeContext
 {
@@ -118,14 +127,12 @@ int probeInit(ProbeHnalde handle, const char* uri)
     AVRational bq = { 1, PSECOND };
     AVStream *ps = handle->fmtCtx->streams[handle->probetrack];
     printf("time_base: %d / %d. \n", ps->time_base.num, ps->time_base.den);
-    printf("time_base2: %d / %d. \n", 1, AV_TIME_BASE);
     if(ps->duration > 0) {
-        handle->duration = av_rescale_q(ps->duration, AV_TIME_BASE_Q, bq);
-        printf("convert duration(%ld) to %ld \n",  ps->duration, handle->duration);
+        handle->duration = convertTime_ff_to_sys(ps->duration, ps->time_base);
     }
     //start time
     if(ps->start_time > 0) {
-        handle->start_time = av_rescale_q(ps->start_time, ps->time_base, bq);
+        handle->start_time = convertTime_ff_to_sys(ps->start_time, ps->time_base);
     }
 
     printf("probe index:%d, start time:%" TIME_FORMAT " duration:%" TIME_FORMAT " \n",
@@ -149,3 +156,65 @@ int probeDeInit(ProbeHnalde handle)
     return 0;
 }
 
+
+
+int probeShowStreamEntries(ProbeHnalde handle, const char* out_to_path)
+{
+    if(handle == NULL || out_to_path == NULL) {
+        return -1;
+    }
+
+    FILE* fout = fopen(out_to_path, "wb+");
+    if(fout == NULL) {
+        printf("cannot open %s file. \n", out_to_path);
+        return -1;
+    }
+
+    AVStream *ps = handle->fmtCtx->streams[handle->probetrack];
+    // AVIndexEntry* entries = ps->index_entries;
+    // int nb_entries = ps->nb_index_entries;
+    // printf("entries: %d \n", nb_entries);
+
+    // char entry_info[1024] = { 0 };
+
+    // for(int i = 0; i < nb_entries; i ++) {
+    //     snprintf(entry_info, 1024, "%d: timestamp(%" TIME_FORMAT "), key:%s", i,
+    //         TIME_ARGS(convertTime_ff_to_sys(entries[i].timestamp, ps->time_base)),
+    //         (entries[i].flags & AVINDEX_KEYFRAME) ? "true": "false");
+    //     fwrite(entry_info, 1, 1024, fout);
+    //     memset(entry_info, 0, 1024);
+    // }
+
+    if(fout)
+        fclose(fout);
+
+    return 0;
+}
+
+
+
+static uint64_t convertTime_ff_to_sys(int64_t time, AVRational base)
+{
+    uint64_t out;
+    if(time == AV_NOPTS_VALUE) {
+        out = CLOCK_TIME_NONE;
+    } else {
+        AVRational bq = { 1, PSECOND };
+        out = av_rescale_q(time, base, bq);
+    }
+
+    return out;
+}
+
+static int64_t convertTime_sys_to_ff(uint64_t time, AVRational base)
+{
+    int64_t out;
+    if(time == CLOCK_TIME_NONE) {
+        out = AV_NOPTS_VALUE;
+    } else {
+        AVRational bq = { 1, PSECOND };
+        out = av_rescale_q(time, bq, base);
+    }
+
+    return out;
+}
