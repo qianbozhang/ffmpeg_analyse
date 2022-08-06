@@ -23,20 +23,20 @@ else
 fi;
 
 #ffmpeg
-mkdir -p $BUILD_TEMP/ffmpeg-5.0.1
-cd $BUILD_TEMP/ffmpeg-5.0.1
+mkdir -p $BUILD_TEMP/FFmpeg
+cd $BUILD_TEMP/FFmpeg
 if [ ! -f "build_ok" ]; then
-    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>> build ffmpeg-5.0.1 >>>>>>>>>>>>>>>>>>>>>>>";
-    CC=$CC $EXTRA_DIR/ffmpeg-5.0.1/configure --prefix=$INSTALL_DIR \
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>> build FFmpeg >>>>>>>>>>>>>>>>>>>>>>>";
+    CC=$CC $EXTRA_DIR/FFmpeg/configure --prefix=$INSTALL_DIR \
         --enable-shared
     make -j 8 && make install
     if [ $? -eq 0 ]; then
         touch build_ok;
-        echo "ffmpeg-5.0.1 compiled successfully, please delete \"build_ok\" file in $BUILD_TEMP/ffmpeg-5.0.1 if you wanted rebuild.";
+        echo "FFmpeg compiled successfully, please delete \"build_ok\" file in $BUILD_TEMP/FFmpeg if you wanted rebuild.";
     else
-        echo "ffmpeg-5.0.1 compiled fail, please fixed error and retry.";
+        echo "FFmpeg compiled fail, please fixed error and retry.";
         exit 0;
     fi;
 else
-    echo "ffmpeg-5.0.1 has been compiled.";
+    echo "FFmpeg has been compiled.";
 fi;

@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libavutil/imgutils.h"
-#include "libswscale/swscale.h"
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 
 #define URI_BUFF_MAX    1024
 
@@ -96,6 +96,7 @@ int probeInit(ProbeHnalde handle, const char* uri)
 
     strncpy(handle->uri, uri, strlen(uri));
     printf("setting uri:%s \n", handle->uri);
+    av_log_set_level(AV_LOG_TRACE);
 
     ret = avformat_open_input(&handle->fmtCtx, handle->uri, NULL, NULL);
     if (ret < 0)
@@ -122,6 +123,8 @@ int probeInit(ProbeHnalde handle, const char* uri)
             break;
         }
     }
+
+    av_dump_format(handle->fmtCtx, handle->probetrack, handle->uri, 0);
 
     //duration
     AVRational bq = { 1, PSECOND };
@@ -170,9 +173,11 @@ int probeShowStreamEntries(ProbeHnalde handle, const char* out_to_path)
         return -1;
     }
 
-    AVStream *ps = handle->fmtCtx->streams[handle->probetrack];
-    // AVIndexEntry* entries = ps->index_entries;
-    // int nb_entries = ps->nb_index_entries;
+
+    // AVStream *ps = handle->fmtCtx->streams[handle->probetrack];
+    // const FFStream *const sti = ffstream(ps);
+    // AVIndexEntry* entries = sti->index_entries;
+    // int nb_entries = sti->nb_index_entries;
     // printf("entries: %d \n", nb_entries);
 
     // char entry_info[1024] = { 0 };
@@ -185,8 +190,8 @@ int probeShowStreamEntries(ProbeHnalde handle, const char* out_to_path)
     //     memset(entry_info, 0, 1024);
     // }
 
-    if(fout)
-        fclose(fout);
+    // if(fout)
+    //     fclose(fout);
 
     return 0;
 }
